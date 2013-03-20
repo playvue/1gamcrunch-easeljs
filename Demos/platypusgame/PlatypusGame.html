@@ -1,0 +1,68 @@
+<!DOCTYPE html>
+<html>
+<head>
+<meta charset="UTF-8">
+<title>CreateJS export from PlatypusGame.fla</title>
+
+<!--<script src="libs/easeljs-0.4.1.min.js"></script>
+<script src="libs/tweenjs-0.2.0.min.js"></script>
+<script src="libs/movieclip-0.4.1.min.js"></script>
+<script src="libs/preloadjs-0.1.0.min.js"></script>
+<script src="libs/soundjs-0.2.0.min.js"></script>-->
+<script src="http://code.createjs.com/easeljs-0.6.0.min.js"></script>
+<script src="http://code.createjs.com/tweenjs-0.4.0.min.js"></script>
+<script src="http://code.createjs.com/movieclip-0.6.0.min.js"></script>
+<script src="http://code.createjs.com/soundjs-0.4.0.min.js"></script>
+<script src="http://code.createjs.com/preloadjs-0.3.0.min.js"></script>
+<script src="PlatypusGame.js"></script>
+
+<script>
+var canvas, stage, exportRoot, images;
+
+function init() {
+	canvas = document.getElementById("canvas");
+	images = {};
+
+	var manifest = [
+		{src:"images/cliff.png", id:"cliff"},
+		{src:"sounds/pop.mp3", id:"pop"}
+	];
+
+	/*var loader = new PreloadJS(false);
+	loader.installPlugin(SoundJS);
+	loader.onFileLoad = handleFileLoad;
+	loader.onComplete = handleComplete;
+	loader.loadManifest(manifest);*/
+    var queue = new createjs.LoadQueue();
+    queue.installPlugin(createjs.Sound);
+    queue.addEventListener("complete", handleComplete);
+    queue.addEventListener("fileload", handleFileLoad);
+    queue.loadManifest(manifest);
+
+}
+
+function handleFileLoad(o) {
+	if (o.type == "image") { images[o.id] = o.result; }
+}
+
+function handleComplete() {
+	exportRoot = new lib.PlatypusGame();
+
+	stage = new createjs.Stage(canvas);
+	stage.addChild(exportRoot);
+	stage.update();
+
+	createjs.Ticker.setFPS(20);
+	createjs.Ticker.addEventListener("tick", stage);
+}
+
+function playSound(name, loop) {
+	createjs.Sound.play(name, SoundJS.INTERRUPT_EARLY, 0, 0, loop);
+}
+</script>
+</head>
+
+<body onload="init();" style="background-color:#D4D4D4">
+	<canvas id="canvas" width="800" height="400" style="background-color:#ffffff"></canvas>
+</body>
+</html>

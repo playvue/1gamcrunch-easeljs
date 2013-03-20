@@ -1,0 +1,15 @@
+{"frames":{
+	"regX":0,
+	"width":52,
+	"regY":0,
+	"count":56,
+	"height":60
+}, "animations":{
+	"CentipedeBodyWalk":[14, 26],
+	"CentipedeWalk":[42, 55],
+	"CentipedeButtWalk":[0, 12],
+	"CentipedeBodyAltWalk":[28, 40],
+	"CentipedeBodyWalkDown":[27, 27],
+	"CentipedeButtDown":[13, 13],
+	"BodyDown":[41, 41]
+}, "images":["centipede-article.png"]}

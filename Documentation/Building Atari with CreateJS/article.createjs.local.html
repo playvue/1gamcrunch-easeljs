@@ -1,0 +1,967 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Building Atari with CreateJS</title>
+    <style>
+   		CANVAS {
+   			border: 1px solid #666;
+   			background-color: #000;
+   		}
+   	</style>
+</head>
+<body>
+<h1>Building Atari with CreateJS</h1>
+<p>By Lanny McNie, Michael Graves, and Chris Caldwell of <a href="http://gskinner.com" target="_blank">gskinner.com</a></p>
+<p>This article recently appeared on <a href="http://atari.com/arcade/developers" target="_blank">the Atari Arcade Developer Center</a>,
+    a collaboration by the teams at <a href="http://gskinner.com" target="_blank">gskinner.com</a> , <a href="http://atari.com">Atari</a>
+    and <a href="http://ietestdrive.com" target="_blank">Internet Explorer.</a></p>
+
+<img src="assets/lockup.png" alt="CreateJS + Atari + Internet Explorer 10" />
+<p class="article-teaser">
+	The Atari Arcade was among the most demanding game development projects because it required full multi-touch,
+	multi-player support across many modern browsers and devices - and we wouldn't have been able to do it without CreateJS.
+	We've rebuilt these games from scratch and we were able to do this project in half the time it would have taken one year
+	ago without these enhancements.  There's no emulation - and everything, from design to code, is completely original in
+	HTML5, CSS3, and JS. It was also a lot of fun.</p>
+
+<p>
+	This tear-down will give you some great best practices for building games - how we used this suite of tools to build our vision of a modern
+	arcade on the web.  We've literally made hundreds of enhancements that are available for you to use open source on
+	<a href="http://github.com/atariadmin/AtariArcadeSDK" target="_blank">GitHub</a>. It includes pre-loaded game templates, pre-set touch
+	controls, effects, score helpers and some pre-built libraries for rudimentary collisions and physics.
+</p>
+<p>
+	A lot of this inspiration came from the new capabilities and performance in Internet Explorer 10 that allow people to interact in an entirely new way on the web - with touch on Windows 8 tablet devices.  Gaming classics like Asteroids and Missile Command were the perfect canvas to show what a touch-first web might look like.
+</p>
+
+<!--
+	assets/
+-->
+
+
+<!-- HEADER -->
+
+
+	<script type="text/javascript" src="http://code.createjs.com/easeljs-0.5.0.min.js"></script>
+	<script type="text/javascript" src="http://code.createjs.com/tweenjs-0.3.0.min.js"></script>
+	<script type="text/javascript" src="http://code.createjs.com/soundjs-0.3.0.min.js"></script>
+	<script type="text/javascript" src="http://code.createjs.com/preloadjs-0.2.0.min.js"></script>
+	<script>
+	// GENERIC DEMO BOOTSTRAPPER
+	var lastDemo = null;
+	var demoHash = {};
+	function initDemo(name, stage, start, stop) {
+		var demo = demoHash[name] = {name: name, stage:stage, initHandler:start, completeHandler: stop};
+		prepDemo(demo);
+	}
+	function prepDemo(demo) {
+		var stage =  demo.stage;
+
+		var logo = new createjs.Graphics()
+			.f("#f00")
+			.mt(37,3).lt(41,3).lt(41,23).qt(41,62,8,68).lt(8,59).qt(37,53,37,3).cp()
+			.dr(44,3,10,65)
+			.mt(61,3).lt(57,3).lt(57,23).qt(57,62,90,68).lt(90,59).qt(61,53,61,3).cp();
+		var shape = new createjs.Shape(logo);
+		shape.scaleX = shape.scaleY = 1.4;
+		stage.addChild(shape);
+
+		var txt = new createjs.Text("Click to Start Demo", "40px Arial", "#f00");
+		txt.x = 100;
+		createjs.Touch.enable(stage);
+		stage.addChild(txt);
+		stage.update();
+		stage.onMouseDown = function() {
+			startDemo(demo.name);
+		}
+	}
+	function startDemo(name) {
+		if (lastDemo) {
+			lastDemo.completeHandler();
+			lastDemo.stage.removeAllChildren();
+			prepDemo(lastDemo);
+		}
+		lastDemo = demoHash[name];
+		lastDemo.stage.removeAllChildren();
+		lastDemo.stage.update();
+		lastDemo.stage.onMouseDown = null;
+		lastDemo.initHandler();
+	}
+	function proxy(method, scope) {
+		return function() {
+			method.apply(scope, arguments);
+		}
+	}
+
+	</script>
+
+<h2 class="header-medium">Less Guesswork, Less Legwork</h2>
+<p>
+In a short amount of time, we were tasked to design and develop a small library of games that demonstrate the best that
+	HTML5 has to offer in <a href="http://blogs.msdn.com/b/ie/archive/2011/09/20/touch-input-for-ie10-and-metro-style-apps.aspx" target="_blank">touch-enabled</a>
+	Internet Explorer 10. We aimed to maintain the souls of the original Atari titles, while modernizing the visuals,
+	animations and game interactions to best suit the latest standards-based web technologies available in modern browsers today.
+</p><p>
+This presented an opportunity to really use CreateJS in the manner for which it was intended: Absorb the heavy lifting associated with laborious and costly HTML5 development, and provide an easy, familiar approach for developers building interactive content for the modern web.
+</p><p>
+Bonus: We get to work with Atari.
+</p><p>
+Game design and development needs to be flexible, agile, and executed in parallel - with as little time as possible sunk into addressing cross-browser limitations and inconsistencies. Under its lightweight hood, CreateJS provides browser-specific sensitivity, with prioritized and graceful fallbacks that take the guesswork out of your technical approaches, and reduces time associated with testing and debugging.
+</p><p>
+If this is the first you've heard of CreateJS, take a look at her guts:
+<ul class="createjs-list">
+	<li><img src="assets/EaselJS_48x48.png" alt="EaselJS" /><a href="http://easeljs.com" target="_blank">EaselJS</a>: A library which manages sprites, animation, vector and bitmap drawing, and user interaction (including multi-touch) based on HTML5 Canvas. It uses a display list concept that mirrors that offered in Flash.</li>
+	<li><img src="assets/TweenJS_48x48.png" alt="TweenJS" /><a href="http://tweenjs.com" target="_blank">TweenJS</a>: A simple and chainable tweening engine that transitions numeric or non-numeric values over time. It is optimized for use with EaselJS, or can be used on its own.</li>
+	<li><img src="assets/SoundJS_48x48.png" alt="SoundJS" /><a href="http://soundjs.com" target="_blank">SoundJS</a>: An audio playback engine, which allows pluggable modules to play sound using a variety of methods based on your users' capabilities.</li>
+	<li><img src="assets/PreloadJS_48x48.png" alt="PreloadJS" /><a href="http://preloadjs.com" target="_blank">PreloadJS</a>: Takes the guesswork out of preloading your assets, whether they be images, video, sounds, JS, data, or whatevs.</li>
+	<li><img src="assets/Zoe_48x48.png" alt="Zo&euml;" /><a href="http://createjs.com/zoe" target="_blank">Zo&euml;</a>: Configure and export spritesheets from Flash animations, optimized for use with EaselJS.</li>
+</ul>
+</p><p>
+The Atari Arcade SDK supplements CreateJS to offer a number of additional tools for developers.
+<ol><li>A framework for instantiating and controlling games, including handling end-game scenarios, pausing, high score entries and display, and more!</li>
+<li>Asset definition for game preloading.</li>
+<li>User Input (keyboard, mouse, touch, and multi-player input), including skinnable controls.</li>
+<li>Code libraries for commonly used string, math, collision utilities, plus some effects libraries.</li>
+</ol></p>
+<p>
+With CreateJS and the Atari Arcade SDK, your fundamental client-side game development bases are covered. If you come from a Flash background, EaselJS and the rest of the CreateJS suite provide a familiar, and approachable way to develop content completely ready for Internet Explorer 10 and other modern browsers.
+</p><p>
+If you want to build games in HTML5, there really is no better set of tools to get started.</p>
+
+
+<h2 class="header-medium">
+	EaselJS - An Easier Canvas
+</h2>
+
+<p>EaselJS is the heart of the CreateJS Suite, and similarly, becomes the heart of each game.</p>
+<p>
+All the visual elements of a game are rendered to an EaselJS stage, which gets redrawn every 16-60 milliseconds (a configurable 20 to 60 fps). This central heartbeat, or "tick", is handled automatically by the EaselJS Ticker,
+	which renders any changes to the properties of text, bitmaps, vector shapes, and animations to the HTML5 Canvas
+	(which is well-supported and <a href="http://blogs.msdn.com/b/ie/archive/2011/04/26/understanding-differences-in-hardware-acceleration-through-paintball.aspx" target="_blank">hardware accelerated</a> in modern browsers like Internet Explorer 10).
+</p><p>
+The visual elements of a game can be any of the display objects provided by EaselJS. Each offers functionality that would otherwise need to be tediously re-created.</p>
+
+<h3>
+Core Capabilities
+</h3>
+<p>
+1. EaselJS offers simple display objects (Bitmap, Graphics, and Text) which provide an easy approach to the control the position, transformation, opacity, filters, visibility, and other properties of a visible object on stage. Elements can be grouped and transformed together using Containers.</p>
+</p>
+<!-- snippet: container.js -->
+<pre>
+<code data-language="javascript" class="javascript">
+// Create a container (group)
+var container = new createjs.Container();
+
+// Transform and rotate. Any children will be affected.
+container.x = 100;
+container.rotation = 5;
+
+// Create a shape
+var shape = new createjs.Shape(
+	new createjs.Graphics().beginFill("#999").drawRect(0,0,50,50)
+);
+
+// Create an image
+var bitmap = new createjs.Bitmap("path/to/image.png");
+bitmap.x = 100;
+
+// Create some text
+var text = new createjs.Text("Hello World", "24px Arial", "#990000");
+text.x = 200;
+
+// Add it all to the container, which is then put on the stage.
+container.addChild(shape, bitmap, text);
+stage.addChild(container);
+</code>
+</pre>
+<p>
+With this approach, elements in a game (such as sprites, controls, and game HUDs) can easily be created, updated, and removed without working with the canvas context.
+</p>
+
+<!--Demo showing particle effects, with simple controls to move, rotate, etc? -->
+<script type="text/javascript">
+	var particleStage; 			// Stage
+	var particleImage; // Particle sprite
+	var particles = [];
+	var emitterPoint = new createjs.Point(290, 195); 	// Point in container to spawn particles.
+
+	window.addEventListener("load", initParticles, false)
+	function initParticles() {
+		particleStage = new createjs.Stage(document.getElementById("particleCanvas"));
+		initDemo("particles", particleStage, startParticles, stopParticles);
+	}
+
+	function startParticles() {
+		particleImage = new Image();
+		particleImage.src = "assets/atariLogo.png";
+		createjs.Ticker.addListener(particleTick);
+	}
+
+	function stopParticles() {
+		createjs.Ticker.removeListener(particleTick);
+		particles.length = 0;
+	}
+
+	function particleTick() {
+		if (particles.length < 30) {
+			var p = new createjs.Bitmap(particleImage);
+			p.regX = 25;p.regY = 28;
+			particleStage.addChild(p);
+			initParticle(p);
+			particles.push(p);
+		}
+
+		for(var i = 0, l = particles.length; i < l; i++) {
+			var p = particles[i];
+			p.x += p.vx;
+			p.y += p.vy;
+			p.vy += 0.9;
+			p.alpha *= 0.94;
+			p.rotation = Math.atan2(p.vy, p.vx) * 180/Math.PI + 180;
+			if (p.y > 220 || p.alpha < 0.01) {
+				initParticle(p);
+			}
+		}
+		particleStage.update();
+	}
+
+	function initParticle(p) {
+		p.x = emitterPoint.x; p.y = emitterPoint.y;
+		p.vx = Math.random() * 30 - 15;
+		p.vy = Math.random() * -20;
+		p.alpha = 1;
+		p.scaleX = p.scaleY = 1;
+	}
+
+</script>
+<canvas id="particleCanvas" width="580" height="200"></canvas>
+
+<p>
+2. A simplified and powerful Graphics layer, which allows vector graphic instances to be created using familiar APIs, chained with a code-friendly syntax, and even shared between multiple shapes.</p>
+<!--snippet: graphics.js-->
+<pre>
+<code data-language="javascript">
+// A Graphics object that represents the Atari Logo.
+// Each graphic command is chained to the previous one.
+var logo = new createjs.Graphics()
+	.beginFill("#ff0000")
+	.moveTo(37,3).lineTo(41,3).lineTo(41,23)
+		.quadraticCurveTo(41,62,8,68)
+		.lineTo(8,59).quadraticCurveTo(37,53,37,3).cp()
+	.dr(44,3,10,65)
+	.moveTo(61,3).lineTo(57,3).lineTo(57,23)
+		.quadraticCurveTo(57,62,90,68)
+		.lineTo(90,59).quadraticCurveTo(61,53,61,3).cp()
+</code>
+</pre>
+
+<!--Demo: AtariLogo.html-->
+	<script type="text/javascript">
+		window.addEventListener("load", graphicsInit, false)
+		function graphicsInit() {
+			var stage = new createjs.Stage(document.getElementById("graphicsCanvas"));
+
+			// Create a Graphics on the Atari Fuji Logo
+			var logo = new createjs.Graphics()
+				.f("#f00")
+				.mt(37,3).lt(41,3).lt(41,23).qt(41,62,8,68).lt(8,59).qt(37,53,37,3).cp()
+				.dr(44,3,10,65)
+				.mt(61,3).lt(57,3).lt(57,23).qt(57,62,90,68).lt(90,59).qt(61,53,61,3).cp()
+
+			// Draw 5 shapes using the same graphics.
+			for (var i= 0; i<5; i++) {
+				var s = new createjs.Shape(logo);
+				s.x = 10+(i*110);
+				s.y = 10;
+				s.scaleX = s.scaleY = 1.2;
+				stage.addChild(s);
+			}
+
+			// Redraw the stage one time.
+			stage.update();
+		}
+	</script>
+	<canvas id="graphicsCanvas" width="580" height="100" value="10"></canvas>
+
+<p>3. Frame-based animations using spritesheets are great for combining assets for an animation into a single image, which only needs to be loaded once.</p>
+<!-- snippet: centipede.json -->
+<pre>
+<code data-language="javascript json" class="json">
+{"frames":{
+	"width":52,
+	"height":60
+	"regX":0,
+	"regY":0,
+	"count":56,
+}, "animations":{
+	"CentipedeBodyWalk":[14, 26],
+	"CentipedeWalk":[42, 55],
+	"CentipedeButtWalk":[0, 12],
+	"CentipedeBodyAltWalk":[28, 40],
+	"CentipedeBodyWalkDown":[27, 27],
+	"CentipedeButtDown":[13, 13],
+	"BodyDown":[41, 41]
+}, "images":["centipede-article.png"]}
+</code>
+</pre>
+<img src="assets/centipede-article.png" />
+
+<p class="tips">
+Pro Tips
+<ul><li>Spritesheets can contain a single sprite's animations, but can also contain information for multiple sprites in a single definition, spanning multiple PNG files.</li>
+<li>A new tool by gskinner.com, <a href="http://gskinner.com/blog/archives/2012/08/reducing-file-size-for-images-with-alpha-channels.html" target="_blank">Omega</a>, uses a separate alpha channel to provide the file-saving of JPEG images with the alpha transparency of an image, which can result in awesome savings!</li>
+<li>The Flash Toolkit for CreateJS can export compact vector data, which can be turned into spritesheets on the fly using the SpriteSheetBuilder for up-front file savings, and run-time performance increases.</li></ul>
+</p>
+
+<p>4. Graphic and container-level caching offers better performance, GPU support, and the ability to dynamically composite textures over time. Additionally, The EaselJS SpriteSheetBuilder class can generate "run-time" spritesheets, which provides the filesize-savings of vector graphics, with the run-time benefits of bitmap caching and hardware acceleration.</p>
+
+<img src="assets/combat-cache.jpg" alt="Combat before and after" />
+
+<!-- snippet: updateCache -->
+<pre>
+<code data-language="javascript">
+// Each time a shot is fired, the game stamps it into the arena.
+function explodeShot(shot) {
+	var stamp;
+
+	// Determine the right stamp. The stamp is an EaselJS bitmap
+	// Reuse instances, rather than creating new ones each time.
+	if (shot.hitSomething) {
+		stamp = this.craterStamp;
+	} else {
+		stamp = this.explosionStamp;
+	}
+
+	// Position the shot
+	stamp.x = shot.x();
+	stamp.y = shot.y();
+
+	// Set some random scale/rotation
+	stamp.scaleX = stamp.scaleY = 0.5 + Math.random() * 0.5;
+	stamp.rotation = Math.random() * 360;
+
+	// Stamp the shot in the arena
+	this.arena.stamp(stamp);
+}
+
+// The Arena.js contains the stamp method
+function stamp(stamp) {
+	// Clear out any old children. They aren't drawn so they
+	// only get removed when we want to stamp something new.
+	this.groundLayer.removeAllChildren();
+
+	// Stamp the new sprite on top of existing cache
+	this.groundLayer.addChild(stamp);
+
+	// Using source-over, it just applies on top
+	this.groundLayer.updateCache("source-over");
+}
+</code>
+</pre>
+
+<p>It doesn't end there. EaselJS is the most mature piece of the CreateJS suite, and has a ton of evolving features, many updated and introduced during the lifespan of this project.</p>
+
+<h3 class="header-small">Example: Super Breakout</h3>
+<p>Here is a simple showcase of all of the different display objects in action. Super Breakout makes use of:</p>
+<ul><li>Text for the scoreboard</li>
+<li>A graphic for the various balls</li>
+<li>A single bitmap for the ball trails</li>
+<li>SpriteSheets for the paddle and bricks</li>
+<li>Cached graphics for the spark effects</li></ul>
+
+		<img src="assets/breakout.jpg" alt="breakout breakdown" />
+
+<h3>User Interaction</h3>
+<p>
+What turns a great concept, great art, and great animation, into a great game is the user interaction. Luckily, HTML and
+	Javascript have long supported a robust mouse interaction model. Unfortunately, the nature of working with Canvas in
+	HTML5 introduces a fairly large hole in this model. Here's why:
+</p><p>
+When your game is rendered to an HTML5 Canvas, all mouse interactions are captured by a single object: the Canvas.
+	There is no pre-conceived support for clicking on an individual object that has been rendered to pixels, and
+	composited (flattened) with all the other pixels within that single, flat Canvas.
+</p>
+<p>
+<em>EaselJS does that for you</em>. User interaction is converted into pixel-perfect hit detection, in a performant,
+	and straightforward way. This is the essence the of the EaselJS stage: it bridges the gap between drawing to a
+	single flattened Canvas, and providing useful information conducive to designing responses to user interaction.</p>
+
+<p>
+<h3 class="header-small">Example: Multi-Touch Support</h3>
+		<p>
+New browser innovations like Internet Explorer 10 and mobile Safari provide powerful, easy-to-use touch APIs. Until recently, EaselJS simply had rudimentary single input support. This project was the catalyst needed to add multi-touch support, which is now included out-of-the-box, with no need to add any additional code on your part. Different browsers support multi-touch in different ways (adhering to different APIs), however if you're using EaselJS, you don't have to worry. We've abstracted the cross-browser inconsistencies into a single, straightforward implementation.</p>
+
+<!-- Demo: MultiTouch.html -->
+<script>
+// DRAG AND DROP DEMO
+	var dragStage;
+	var dragUpdate = true;
+
+	window.addEventListener("load", initDragDemo, false);
+
+	function initDragDemo() {
+		// create stage and point it to the canvas:
+		var canvas = document.getElementById("dragCanvas");
+		dragStage = new createjs.Stage(canvas);
+		initDemo("dragAndDrop", dragStage, startDragDemo, stopDragDemo);
+	}
+
+	function startDragDemo() {
+		// enable touch interactions if supported on the current device:
+		createjs.Touch.enable(dragStage);
+
+		// enabled mouse over / out events
+		dragStage.enableMouseOver(10);
+		dragStage.mouseMoveOutside = true; // keep tracking the mouse even when it leaves the canvas
+
+		// load the source image:
+		var image = new Image();
+		image.src = "assets/arcadeIcon-black.png";
+		image.onload = handleDragImageLoad;
+	}
+
+	function stopDragDemo() {
+		createjs.Ticker.removeListener(dragTick);
+		createjs.Touch.disable(dragStage);
+	}
+
+	function handleDragImageLoad(event) {
+		var image = event.target;
+
+		// create and populate the screen with random images:
+		for(var i = 0; i < 30; i++){
+			var bitmap = new createjs.Bitmap(image);
+			bitmap.regX = 48;
+			bitmap.regY = 65;
+			dragStage.addChild(bitmap);
+			bitmap.x = 580 * Math.random()|0;
+			bitmap.y = 200 * Math.random()|0;
+			bitmap.rotation = 360 * Math.random()|0;
+
+			// wrapper function to provide scope for the event handlers:
+			bitmap.onPress = handleDragPress;
+		}
+
+		createjs.Ticker.addListener(dragTick);
+		dragStage.update();
+	}
+
+
+	function handleDragPress(event) {
+		var target = event.target;
+		// bump the target in front of it's siblings:
+		dragStage.addChild(target);
+		dragUpdate = true;
+
+		// add a handler to the event object's onMouseMove callback
+		// this will be active until the user releases the mouse button:
+		event.onMouseMove = function(moveEvent) {
+			target.x = moveEvent.stageX;
+			target.y = moveEvent.stageY;
+			// indicate that the stage should be updated on the next tick:
+			dragUpdate = true;
+		}
+	}
+
+	function dragTick() {
+		// this set makes it so the stage only re-renders when an event handler indicates a change has happened.
+		if (dragUpdate) {
+			dragUpdate = false; // only update once
+			dragStage.update();
+		}
+	}
+	</script>
+	<canvas id="dragCanvas" width="580" height="200"></canvas>
+<!-- snippet: draganddrop.js -->
+<pre>
+<code data-language="javascript">
+var button = new createjs.Bitmap(imagePath);
+
+// Standard display object mouse events
+button.onPress = handlePress;
+
+// Simple drag and drop. The events are automatically removed for you.
+function handlePress(event) {
+	event.onMouseMove = handleDrag;
+}
+
+function handleDrag(event) {
+	button.x = event.stageX;
+	button.y = event.stageY;
+}
+</code>
+</pre>
+
+<p>
+<strong>Example: Touch controls</strong><br />
+For Atari Arcade, we also took a hard look at what was generally required by users for touch interactions, and tried to provide out-of the box solutions. The Joystick component, used in Asteroids, Yar's Revenge, Centipede, and Combat, tracks mouse interactions in a defined area, and then translates the drag actions into both a familiar visual representation, as well as normalized data that the games can make use of.</p>
+<!-- snippet: Joystick.js -->
+<pre>
+<code data-language="javascript">
+// Initialization is a great time to set up touch controls
+function initialize(stage, assets, gameInfo) {
+
+	if (gameInfo.touchEnabled) {
+
+		// Create a joystick. There are lots of awesome
+		// configurations, but this is all you need to get
+		// started. Check out the docs for options!
+		var joystick = new GameLibs.Joystick(stage);
+		joystick.setPosition(25, 25);
+		stage.addChild(joystick);
+	}
+
+}
+</code>
+</pre>
+<img src="assets/asteroids-controls.jpg" />
+
+
+<h2 class="header-medium">TweenJS - Wiggle, Pulse, or Slide</h2>
+<p>
+Most core interactions and animations in games use programmatic motion to respond to constantly changing mouse or keyboard input. However, other aspects of the game (transitions, timed animations, ticking scoreboards, etc..) need a more predictable type of animation, a role filled by a Tween engine.
+</p><p>
+TweenJS takes the usual "move-this-from-here-to-there" tweening approach, and adds powerful chaining, making it awesome for sequencing game animations and events. Complex queues of animations can easily be controlled with just a few lines of code. To sweeten the deal, we can easily inject function calls at any point in the tween chain.
+</p>
+<!-- TweenSample demo -->
+<script>
+		var tweenStage;
+		var yar;
+		window.addEventListener("load", initTweenSample, false);
+		function initTweenSample() {
+			tweenStage = new createjs.Stage(document.getElementById("tweenSampleCanvas"));
+			initDemo("tween", tweenStage, startTweenDemo, stopTweenDemo);
+		}
+
+		function startTweenDemo() {
+			// Create a spritesheet manually.
+			var ss = new createjs.SpriteSheet(
+				{
+					frames:{
+						regX:0, regY:0,
+						count:2,
+						width:103, height:81
+					}, images:["assets/yar.png"]
+				}
+			);
+
+			// Create a bitmap animation, and put it on stage.
+			yar = new createjs.BitmapAnimation(ss);
+			yar.x = 50;
+			yar.gotoAndStop(0);
+			tweenStage.addChild(yar);
+
+			// Tween the character back and forth, turning the eyes on and off.
+			createjs.Tween.get(yar, {loop:true})
+					.wait(3000)
+					.call(yar.gotoAndStop, [1], yar) // red eyes
+					.wait(300)
+					.to({x:430}, 1200, createjs.Ease.backInOut) // move
+					.call(yar.gotoAndStop, [0], yar)
+					.wait(3000)
+					.call(yar.gotoAndStop, [1], yar)
+					.wait(300)
+					.to({x:50}, 1200, createjs.Ease.backInOut)
+					.call(yar.gotoAndStop, [0], yar);
+
+			// Hover the character up and down
+			createjs.Tween.get(yar, {loop:true})
+					.to({y:20}, 500, createjs.Ease.quadInOut)
+					.to({y:0}, 500, createjs.Ease.quadInOut);
+
+			// Update the stage to reflect changes.
+			createjs.Ticker.addListener(tweenStage);
+		}
+
+		function stopTweenDemo() {
+			createjs.Tween.get(yar, {override:true});
+			createjs.Ticker.removeListener(tweenStage);
+			yar = null;
+		}
+	</script>
+	<canvas id="tweenSampleCanvas" width="580" height="100" class="demo"></canvas>
+
+
+<!-- snippet: tweenSample.js -->
+<pre>
+<code data-language="javascript">
+// Tween the character back and forth, turning the eyes on and off.
+createjs.Tween.get(yar, {loop:true})
+	.wait(3000)
+	.call(yar.gotoAndStop, [1], yar) // red eyes
+	.wait(300)
+	.to({x:450}, 1200, createjs.Ease.backInOut) // move
+	.call(yar.gotoAndStop, [0], yar)
+	.wait(3000)
+	.call(yar.gotoAndStop, [1], yar)
+	.wait(300)
+	.to({x:50}, 1200, createjs.Ease.backInOut)
+	.call(yar.gotoAndStop, [0], yar);
+
+// Hover the character up and down
+createjs.Tween.get(yar, {loop:true})
+	.to({y:20}, 500, createjs.Ease.quadInOut)
+	.to({y:0}, 500, createjs.Ease.quadInOut);
+</code>
+</pre>
+<p>
+TweenJS isn't limited to display object properties either. It can tween just about anything. For example, all the scoreboards in the games use the ScoreManager library included in the SDK - which has a simple API: setScore(). Once the score changes, TweenJS transitions the score over a specified duration with little to no code.
+</p>
+<!-- snippet: scoreboard.js -->
+<pre>
+<code data-language="javascript">
+// Each time score is added, tween the value.
+function addScore(score) {
+	// Save the new score
+	this.newScore = score;
+
+	// Create a tween that will update the "displayScore", which
+	// we use to display the changing number.
+	var tween = createjs.Tween.get(this).to({displayScore:score}, 800);
+
+	// For this example, set a local "scope" so the onChange
+	// callback has something to refer to.
+	var scope = this;
+
+	// As the tween runs, it will call "onChange"
+	tween.onChange = function(tween) {
+		// Update the text instance with "displayScore".
+		scope.text.text = scope.displayScore;
+	}
+}
+
+// The "ScoreManager" abstracts the score formatting and tweening.
+function killEnemy(points) {
+	this.scoreManager.addScore(points);
+}
+</code>
+</pre>
+
+
+<!-- ScoreManager demo -->
+<script>
+		window.addEventListener("load", initScoreManager, false);
+		var scoreStage;
+		var displayScore = 1000;
+		var actualScore = 1000;
+		function initScoreManager() {
+			// Create the EaselJS stage
+			scoreStage = new createjs.Stage(document.getElementById("scoreManagerCanvas"));
+			initDemo("score", scoreStage, startScoreDemo, stopScoreDemo);
+		}
+
+		function startScoreDemo() {
+			// Create a text field the score can live in
+			var label = new createjs.Text("0", "40px Arial", "#f00");
+			label.textBaseline = "top";
+			scoreStage.addChild(label);
+
+			// Create some simple instructions.
+			var instructions = new createjs.Text("click the stage to add some points.", "12px Arial", "#999");
+			instructions.textBaseline = "top";
+			instructions.y = 45;
+			scoreStage.addChild(instructions);
+
+			// On stage mouse down, add some random points.
+			scoreStage.onMouseDown = function() {
+				var points = Math.random() * 1000 | 0;
+				actualScore += points;
+				createjs.Tween.get(window, {override:true})
+						.to({displayScore:actualScore}, 3000, createjs.Ease.quartOut)
+						.onChange = function() {
+					var t = displayScore | 0;
+					label.text = t;
+				};
+			}
+
+			createjs.Ticker.addListener(scoreStage);
+		}
+
+		function stopScoreDemo() {
+			createjs.Ticker.removeListener(scoreStage);
+		}
+	</script>
+	<canvas id="scoreManagerCanvas" width="580" height="100"></canvas>
+
+
+<p>
+We can't overstate enough how much we used TweenJS developing the Atari Arcade games. From transitioning the tiles in Super Breakout, resetting the gnome in Centipede, to spawning the tanks in Combat, TweenJS offers a straightforward and reliable way to transition values over time and have the results drawn to the screen every frame. And since it's tied to the CreateJS Ticker, tweens simply pause and resume with the game.
+</p>
+<p>
+Some other examples include:</p>
+<ul><li>Initiate and flash the ball in Super Breakout, including chaining a call to a play a sound between each flash.</li>
+<li>Transition the paddles in and out in Pong and Super Breakout</li>
+<li>Firework animation when scoring in Pong</li>
+<li>Initiate and flash the ship in Asteroids when starting a new life</li>
+<li>Level text and score popups in Centipede</li>
+<li>Flea animation and mushroom repair transitions in Centipede</li>
+<li>Day-night transitions in Centipede</li>
+<li>Touch controls (joystick and thrust) position reset</li>
+<li>Game over delays in Lunar Lander</li>
+<li>Rotational thrusters in Lunar Lander</li>
+</ul>
+<p>We even use it in the Arcade Chooser navigation where you select games to snap the column back into its position.
+</p><p>
+One last tip. Since our games are all tied to a single heartbeat, TweenJS is a great replacement for delayed function calls
+	in place of something like setTimeout. This enables us to have timed event chains, without concerning ourselves with
+	things like a user pausing the game.</p>
+<!-- snippet: tweenFunctions.js -->
+<pre>
+<code data-language="javascript">
+function killPlayer() {
+	// Create a tween
+	var tween = createjs.Tween.get(this.player).wait(100);
+	for (var i= 0; i&lt;5; i++) {
+		// Tween in and out the player five times
+		tween.to({alpha:1}, 200)
+			.to({alpha:0}, 600, createjs.Ease.quadOut);
+	}
+
+	// After 2 seconds, show a dialog.
+	// After another 3, hide it, and restart the game.
+	createjs.Tween.get(this)
+			.wait(2000)
+			.call(this.showGameOverDialog, null, this)
+			.wait(3000)
+			.call(this.hideGameOverDialog, null, this)
+			.call(this.restartGame, null, this);
+}
+</code>
+</pre>
+
+<h2 class="header-medium">PreloadJS - Cover Your Assets</h2>
+<p>
+Preloading in CreateJS is something we are able to largely hide from developers. Using an asset manifest (a simple XML file
+	describing assets and their locations), the site framework uses <a href="http://preloadjs.com" target="_blank">PreloadJS</a> to automatically download and manage assets needed for the games. This includes scripts (which are injected into the HTML DOM), audio, images, and JSON data, which are passed into the games.
+</p><p>
+Even for us on this project, PreloadJS was a god-send. Preloading is one of the most fragmented, unpredictable, "needs-a-fallback-approach" technologies in JavaScript, and the library wraps it all up into a few easy API calls. From the developers perspective, it doesn't matter whether the browser supports XHR (XMLHttpRequests), requires ArrayBuffer responses, esoteric headers, or other fun workarounds. Just point at some assets, and go. The latest browsers get fancy progress events with granular data, and older browsers get chunked loading, but as developers you don't even need to think about it.
+</p><p>
+Once the assets are loaded, a JavaScript object is passed to the game right before it is started. Assets are accessible using the IDs that are provided in the game manifest, including references to the actual loaded content, which can be directly used in games without worrying about waiting for loads.
+</p><p>
+<strong>Example: Using a loaded asset in a game.</strong>
+	</p>
+<!-- snippet: loadedAsset.js -->
+<pre>
+<code data-language="javascript">
+// The game manifest includes an image
+var assets = [
+	{id:"projectile", src:"images/projectile.png"}
+];
+
+// Inside the game, we just do this
+function initialize(assets, stage) {
+	var bitmap = new createjs.Bitmap(assets.projectile);
+	stage.addChild(bitmap);
+}
+</code>
+</pre>
+
+<h2 class="header-medium">
+	SoundJS - Sweet Emotion
+</h2>
+<p>
+There is something about audio in a game that makes it complete. When building Centipede, the game just didn't have that sense of panic that we remembered as kids playing on our parent's old dusty consoles (hey, we aren't <i>that</i> old). Adding the sounds and background track is what stirs up the emotion.
+</p><p>
+We teamed up with the awesome artists at Washingtron Inc, to create a great suite of sounds for the games, and implemented them in no time. In fact, most of the time was dedicated to determining exactly when to play the sounds, and not how. Any guesswork in terms of browser capabilities, required formats, and fallback scenarios is covered out of the box, and any trouble cases can easily be set to force a specific approach.
+</p>
+
+<script>
+
+	var audioDemoIndex = 0;
+	var audioLabel;
+	var audioStage;
+
+	window.addEventListener("load", initAudioDemo, false);
+	function initAudioDemo() {
+		audioStage = new createjs.Stage(document.getElementById("audioDemoCanvas"));
+		initDemo("audio", audioStage, startAudioDemo, stopAudioDemo)
+	}
+	function startAudioDemo() {
+		audioDemoIndex = 0;
+		audioLabel = new createjs.Text("Loading", "40px Arial", "#f00");
+		audioStage.addChild(audioLabel);
+
+		var loader = new createjs.PreloadJS(true);
+		loader.installPlugin(createjs.SoundJS);
+		loader.onComplete = playAudioLevel;
+		loader.loadFile({id:"win", src:"assets/LevelComplete.mp3|assets/LevelComplete.ogg", data:3});
+
+		audioLabel.text = "Loading...";
+		audioStage.update();
+	}
+
+	function stopAudioDemo() {
+		createjs.Tween.get(window, {override:true}).wait(10);
+	}
+
+	function playAudioDemo() {
+		audioDemoIndex++;
+		createjs.SoundJS.play("win");
+		if (audioDemoIndex > 3) {
+			audioLabel.text = "Game Over! Click to start again!";
+			audioDemoIndex = 1;
+		} else {
+			audioLabel.text = "Click to Play Level " + audioDemoIndex;
+		}
+		audioStage.onMouseDown = playAudioLevel;
+		audioStage.update();
+	}
+
+	function playAudioLevel() {
+		audioStage.onMouseDown = null;
+		audioLabel.text = "Playing Level " + audioDemoIndex + "...";
+		createjs.Tween.get(window)
+			.wait(1500).call(playAudioDemo);
+		audioStage.update();
+	}
+</script>
+<canvas id="audioDemoCanvas" width="580" height="100"></canvas>
+
+<p>
+SoundJS transparently manages the preloading of audio as a plugin to PreloadJS - right down to determining which audio to load depending on the browser. It really couldn't be easier.
+</p>
+<p>
+Pro tips:
+<ol>
+	<li>Tag loading audio isn't as elegant - but it's better supported, and can be used with cross-domain or local testing.</li>
+	<li>In game manifests, define only an MP3. As long as you have included other formats of audio files with the same filename (yet, different file extension), the SDK takes care of loading the appropriate file based on the user's browser.</li>
+</ol>
+</p>
+<p>
+The only limitation we currently face in the HTML5 audio landscape right now is on iOS. While it is possible to play audio (single sound, on click), we are unable to play multiple on-demand sounds like we can everywhere else. The future is looking bright though - we should have WebAudio in iOS 6 - and SoundJS will be ready to support it!
+</p>
+
+
+<h2 class="header-medium">Zo&euml; - Capture the Moments</h2>
+<p>
+Anyone familiar with gskinner.com knows we come from a strong Flash background. Even though we are working in a lot of new tech these days, we still recognize where Flash has its strengths. Our artists work a lot in Illustrator and Photoshop for asset design - but there is no better tool for timeline or character animation than good ol' Flash Pro.
+</p><p>
+One of our other passions is tool development. Why do a task 1000 times, if you can build a tool in that time that can do
+	it for you? <a href="http://createjs.com/zoe/" target="_blank">Zo&euml;</a> was the answer to that question in 2010 for our first HTML5 game with Microsoft,
+	<a href="http://pirateslovedaisies.com" target="_blank">Pirates Love Daisies</a>.
+</p>
+<!--TODO: [Zo&euml; Screenshot]-->
+<p>
+Animations in Flash can be spit out to spritesheets in a breeze. Zo&euml; remembers your history, so that any changes made
+	to sprites can be re-exported with a push of a button (or two). We also provide a <a href="http://gskinner.com/blog/archives/2012/08/prep-for-zoe-jsfl-command.html" target="_blank">nifty script</a> to help combine assets into a single, packed spritesheet.
+</p>
+
+<p>
+<strong>Example: Centipede's Centipede</strong><br />
+The main aggressor and game's namesake, can be represented by a simple spritesheet, with a walk cycle moving horizontally and vertically. The final game spritesheet is combined with the rest of the assets, as well as the "death animation", for when the centipede meets his end.</p>
+<img src="assets/centipede-article.png" />
+<p>
+But it doesn't end there. Zo&euml; was designed to be part of the team, and exports spritesheet JSON data, which is easily consumed into EaselJS, and rendered as animated sprites. Mathematical!</p>
+
+<script>
+var spriteStage;
+		var centipede;
+		window.addEventListener("load", initSpriteDemo, false);
+		function initSpriteDemo() {
+			spriteStage = new createjs.Stage(document.getElementById("spriteCanvas"));
+			initDemo("sprite", spriteStage, startSpriteDemo, stopSpriteDemo);
+		}
+
+		function startSpriteDemo() {
+			// Define the JSON data
+			var json = {
+				"frames": {"regX": 0, "width": 52, "regY": 0, "count": 56, "height": 60},
+				"animations": {"bodyWalk": [14, 26], "headWalk": [42, 54], "tailWalk": [0, 12], "bodyAltWalk": [28, 40]},
+				"images": ["assets/centipede-article.png"]
+			};
+
+			// Create the spritesheet and pass in data.
+			spriteSheet = new createjs.SpriteSheet(json);
+
+			// Create a centipede container to control
+			centipede = new createjs.Container();
+
+			// Create 10 centipede pieces.
+			for (var i= 0; i<10; i++) {
+				var piece = new createjs.BitmapAnimation(spriteSheet);
+
+				// Choose the right piece
+				if(i==0) { piece.gotoAndPlay("headWalk"); }
+				else if(i==9) { piece.gotoAndPlay("tailWalk"); }
+				else if(i%2==1) { piece.gotoAndPlay("bodyWalk"); }
+				else { piece.gotoAndPlay("bodyAltWalk"); }
+
+				// The centipede is right-aligned.
+				piece.x = -i*30 - 30;
+				centipede.addChild(piece);
+			}
+
+			spriteStage.addChild(centipede);
+
+			createjs.Ticker.addListener(spriteTick);
+		}
+
+		function stopSpriteDemo() {
+			createjs.Ticker.removeListener(spriteTick);
+		}
+
+		// Each tick, move the centipede. Once it reaches the end, it loops back.
+		function spriteTick() {
+			centipede.x = (centipede.x + 8) % 880;
+			spriteStage.update();
+		}
+
+	</script>
+	<canvas id="spriteCanvas" width="580" height="100"></canvas>
+
+
+<h2 class="header-medium">Play Time</h2>
+<p>
+CreateJS provides game developers the freedom to use an architectural approach that is comfortable to them, while maintaining
+	a development sandbox that the framework at large can control.  <a href="http://blogs.msdn.com/b/ie/archive/2012/01/31/web-sites-and-a-plug-in-free-web.aspx" target="_blank">Plugin-free</a>
+	web-based game and application development is still a rocky landscape, and CreateJS aims to reduce the barrier to entry.</p>
+<p>
+When we combine that workflow with the awesome Atari Arcade SDK and game framework, developers get to put aside browser compatibility and workarounds, tedious Canvas APIs, multiple user input APIs and approaches, preload queues, and focus on the best parts of game development: gameplay.</p>
+
+<h3>What's Next?</h3>
+<p>
+1. Read our article on game development with the SDK. It dives into building a game, including some tips and tricks we used when developing the first set of games.<br />
+<a href="/arcade/developers/building-html5-games-atari-arcade" target="_blank">Game Development with the Atari Arcade SDK</a>
+</p>
+<p>2. Visit the Arcade GitHub repository to download the SDK, documentation, and the Quick Start Guide.<br />
+<a href="http://github.com/atariadmin/AtariArcadeSDK/" target="_blank">Atari Arcade SDK on GitHub</a></p>
+</p>
+<p>3. Start playing!</p>
+</p>
+
+
+<h2 class="header-medium">Resources</h2>
+<p>
+	Here's some additional resources and references for game development in HTML5.
+<ul>
+	<li>CreateJS<br />
+		<a href="http://createjs.com" target="_blank">Learn more about CreateJS</a><br />
+		<a href="http://community.createjs.com" target="_blank">Community Forum and Feedback</a><br />
+		<a href="http://github.com/CreateJS" target="_blank">CreateJS on GitHub</a>
+	</li>
+
+	<li>More HTML5 and Flash goodness on <a href="http://gskinner.com" target="_blank">gskinner.com</a> and the <a href="http://gskinner.com/blog" target="_blank">gBlog</a></li>
+
+	<li><a href="http://msdn.microsoft.com/en-us/library/ie/hh673549(v=vs.85).aspx" target="_blank">Internet Explorer 10 Guide for Developers</a></li>
+	<li><a href="http://html5labs.interoperabilitybridges.com/" target="_blank">HTML5 Labs</a>
+	<li><a href="http://www.w3.org/standards/webdesign/" target="_blank">W3C</a></li>
+	<li><a href="http://ie.microsoft.com/testdrive/HTML5/CompatInspector/" target="_blank">Removing legacy IE Markup with Compat Inspector</a></li>
+	<li><a href="http://msdn.microsoft.com/en-us/magazine/hh394148.aspx" target="_blank">Feature Detection for HTML5</a></li>
+	<li><a href="http://blogs.msdn.com/b/ie/" target="_blank">IE Blog</a></li>
+	<li><a href="http://msdn.microsoft.com/en-us/IE" target="_blank">MSDN IE DevCenter</a></li>
+	<li><a href="http://www.ietestdrive.com/" target="_blank">IETestDrive</a></li>
+	<li><a href="http://blogs.msdn.com/b/ie/archive/2011/09/20/touch-input-for-ie10-and-metro-style-apps.aspx" target="_blank">Windows 8 / Internet Explorer 10 : Touch Friendly</a></li>
+	<li><a href="http://blogs.msdn.com/b/ie/archive/2011/08/31/browsing-without-plug-ins.aspx" target="_blank">Windows 8 / Internet Explorer 10 : Plug-in Free</a></li>
+	<li><a href="http://ie.microsoft.com/testdrive/Browser/SitePinningInWin8/" target="_blank">Windows 8 / Internet Explorer 10 : Pinning Sites</a></li>
+</ul>
+</p>
+
+<h2 class="header-medium">About the Authors</h2>
+<img src="assets/article-credits.png" />
+<p>Lanny McNie, Michael Graves, and Chris Caldwell are the senior staff of <a href="http://gskinner.com" target="_blank">gskinner.com</a>, an agency focused on building
+    bleeding edge interactive and creative, and bringing value to platform owners, developers, and end users alike.
+    We produce success stories that showcase and enhance technology platforms. We recently worked with Atari to bring re-imagine
+    the <a href="http://atari.com/arcade/">Atari Arcade</a> using webstandards like HTML5, CSS3, and websockets.</p>
+</body>
+</html>

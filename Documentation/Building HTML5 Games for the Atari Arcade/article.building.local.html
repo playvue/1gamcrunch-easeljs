@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html>
+<head>
+	<title>Building HTML5 Games for the Atari Arcade</title>
+    <style>
+   		CANVAS {
+   			border: 1px solid #666;
+   			background-color: #000;
+   		}
+   	</style>
+</head>
+<body>
+
+<h1>Building HTML5 Games for the Atari Arcade</h1>
+<p>By Lanny McNie, Michael Graves, and Chris Caldwell of <a href="http://gskinner.com" target="_blank">gskinner.com</a></p>
+<p>This article recently appeared on <a href="http://atari.com/arcade/developers" target="_blank">the Atari Arcade Developer Center</a>,
+    a collaboration by the teams at <a href="http://gskinner.com" target="_blank">gskinner.com</a> , <a href="http://atari.com">Atari</a>
+    and <a href="http://ietestdrive.com" target="_blank">Internet Explorer.</a></p>
+
+<img src="assets/ArticleHeader_AtariArcade.jpg" alt="Building HTML5 Games for Atari Arcade" />
+<p class="article-teaser">
+	Today, developing HTML5 games on the web is hardly simple.  Most games on the web are still built with plug-ins like
+	Flash because developers don't have the tools that make game development simple and cost-effective.</p>
+<p>Most HTML5 games are available in isolation so the hardware and browser can be dedicated to gameplay.
+	But that's not how we envisioned a modern arcade – where users could gather, play the games, challenge their friends
+	to high-score dominance, and earn achievements.  We had to rethink how we approached game development with a common set of tools.</p>
+
+<p>
+	With Atari Arcade, that game is changing.  This site was designed completely in HTML5 for Internet Explorer 10 and Windows 8 touch-enabled devices - although it works great in all modern browsers. In this guide, we'll quickly get you up and running with your own HTML5 game.  The Atari Arcade SDK with CreateJS is one of the first cross-browser HTML5 game development platforms that allow you to take advantage of multi-touch capabilities more easily.  The Atari Arcade SDK is just one of many options you should consider.  All of the practices we share can be used with other gaming platforms in modern browsers.
+</p>
+
+<h3 class="header-small">
+	In this article, we'll provide:</h3>
+<ol>
+	<li>Steps to define and build your game</li>
+	<li>An overview of the SDK's goals and approaches</li>
+	<li>Sample code showing integration</li>
+	<li>Adding flair and/or pizazz</li>
+	<li>Steps to test, optimize, and deploy your game</li>
+</ol>
+</p>
+
+<h2 class="header-medium">Re-imagining a Classic</h2>
+<p>
+	Invent a concept from scratch. “Borrow” ideas from other games. At gskinner.com, we were lucky - presented with
+	Atari's catalog, ranging from simple to complex, tasked with a chance to reinvent them. With visions and mechanics
+	already proven, we were able to piggyback on existing gameplay, and introduce new creative. For launch, we targeted
+	eight of the most popular and recognizable titles.
+</p>
+
+<img src="assets/games.jpg"/>
+
+<h3 class="header-small">Visualize</h3>
+<p>
+	With the computing advancements in the past forty years, we were starting from scratch. We set out to maintain the
+	souls of the originals, which were designed in a more restrictive, low fidelity environment. Here is a snap of the original gameplay
+	in Atari's 1986 top seller, <strong>Yars' Revenge&copy;</strong>.
+</p>
+
+<img src="assets/yar-gameplay.jpg"/>
+<p class="caption">Classic.</p>
+
+<h3 class="header-small">Conceptualize</h3>
+
+<p>
+	We started with sketches. Simple, loose, and color-free. They help outline gameplay, general aesthetic, and get our
+	noodles cooking about assets and approaches without focusing on the specific art requirements or details.
+</p><p>
+	Here's a behind the scenes look at some of our original sketches.
+</p>
+<img src="assets/yar-sketch.jpg"/>
+<img src="assets/yar-sketch2.jpg"/>
+
+<h3 class="header-small">Stylize</h3>
+<p>
+	Yars' was both tough and fun to reimagine. Despite being a best-selling title in the late eighties, <strong>no
+	one</strong> on our
+	team had played it. After playing the original, we felt as lost as before.
+<ul>
+	<li>A Yar is an insect. They fly around.</li>
+	<li>There is a “projectile” which hunts the Yar.</li>
+	<li>Yars shoot stuff, and can hide in a barrier.</li>
+	<li>The Qotile is the antagonist he aims to destroy.</li>
+	<li>They can transform into a Swirl and shoot at the Yar.</li>
+	<li>But the Yar has a Zorlon Cannon that can be charged up and fired!</li>
+	<li>The Qotile is surrounded by — what are those…bricks?</li>
+	<li>No, they're eggs or “cosmic cells”</li>
+	<li>And the Yar eats them.</li>
+</ul>
+</p>
+<p>
+	We found this <a href="http://www.atariage.com/comics/comic_thumbs.html?MagazineID=48" target="_blank">awesome comic</a> that shows some vision for design<br/>
+	<img src="assets/yar-comic.jpg"/><br/><br/>
+</p>
+
+<h3 class="header-small">Finalize</h3>
+
+<p>Taking these ideas and discussing our own, we concluded:</p>
+<ul>
+	<li>Yar is mechanical (or in a cool exoskeleton with propulsion instead of wings).</li>
+	<li>He and his weapons are cold, sterile, and metallic.</li>
+	<li>The surrounding environment is natural and serene.</li>
+	<li>The Qotile, its eggs, and spawn are organic and uber-creepy.</li>
+	<li>The eggs hatch into spawn: the projectiles hunting the Yar.</li>
+	<li>The swirl is a projected spawn, which is Yar's toughest challenge.</li>
+	<li>Consuming the eggs, powers the Yar, which in turn powers the Zorlon Cannon.</li>
+</ul>
+<p>Initially we discussed Yar eating the eggs, and sourced a gruesome eating sound.  Here is the final, polished visual style.</p>
+
+<img src="assets/yar-final.jpg"/>
+<p>
+	We considered the story, the scoring mechanic, the levelling system, the animations, the user interactions and the
+	controls for touch for each game. With research, ideation, and aesthetic exploration behind us — we solicit
+	feedback, iterate, and ultimately make decisions.</p>
+
+
+<h2 class="header-medium">Strategies for Developing Games</h2>
+<p>Let's get into development! Take a short walk through the necessary steps to build on the SDK.</p>
+
+<h2 class="header-small">Define a Manifest</h2>
+<p>
+	We use a very simple, centralized, and standardized means to define and load game assets: a game manifest. A manifest is
+	a simple <a href="http://json.org" target="_blank">JSON-formatted</a> outline that describes a game's key information and its assets. It's a legend,
+	storing:</p>
+<ul>
+	<li>The game name.</li>
+	<li>A unique ID for the system.</li>
+	<li>A list of JavaScript files the game requires, including the “game” class, which is instantiated when everything
+		is loaded. We also include a minified alternative for the scripts that is used for deployment.
+	</li>
+	<li>Audio, image, and data (XML, JSON) assets that need to be preloaded.</li>
+	<li>Paths to logos and other artwork displayed in the arcade.</li>
+	<li>Multiplayer information about gameplay modes, number of players, etc.</li>
+	<li>Other optional parameters that help define how the framework interacts with the game, such as whether the game
+		can be continued when the player loses.
+	</li>
+</ul>
+<p>It houses the pertinent details necessary to preload and start a game. Here is a look at the manifest for Super Breakout&copy;:</p>
+
+<!--snippet: breakoutManifest.js -->
+<pre>
+	<code data-language="javascript json" class="json">
+{
+	"splash":   "arcadeArt/background.jpg",
+	"titleArt": "arcadeArt/gameTitle.png",
+
+	"id":       "breakout",
+	"name":     "Super Breakout",
+	"gameClass": "Breakout.js",
+
+	"modes": [
+		{"id":"cavity", "label":"Cavity Mode",
+			"src":"arcadeArt/sp-mode-01.jpg"},
+		{"id":"progressive", "label":"Progressive Mode",
+			"src":"arcadeArt/sp-mode-02.jpg"},
+		{"id":"double", "label":"Double Mode",
+			"src":"arcadeArt/sp-mode-03.jpg"}
+	],
+
+	"dependencies":   [
+		"scripts/Ball.js",
+		"scripts/Brick.js",
+		"scripts/Level.js",
+		"scripts/Player.js",
+		"scripts/Paddle.js",
+		"scripts/LevelManager.js",
+		"scripts/LevelSelector.js",
+		"scripts/Breakout.js",
+		"scripts/ScoreBoard.js"
+	],
+
+	"deployDependencies": [
+		"scripts/breakout-min.js"
+	],
+
+	"assets": [
+		{"id":"json","src":"data/data.json"},
+		{"id":"bricks","src":"data/bricks.json"},
+		{"id":"lives","src":"data/lives.json"},
+		"img/lives.png",
+		{"id":"paddleData","src":"data/paddle.json"},
+		"img/paddle.png",
+		{"id:":"brickImage", "src":"img/bricks.png"},
+		{"id":"background", "src":"img/background.png"},
+		{"id":"scanlines", "src":"img/ui-scanlines.png"},
+
+		{"id":"wall", "src":"sounds/Wall_Hit_02.mp3", "data":2},
+		{"id":"brick1", "src":"sounds/Brick_Hit_01_Final.mp3"}
+		// Other audio
+	]
+}
+	</code>
+</pre>
+
+<img src="assets/breakout-modes.jpg"/>
+<p class="caption">Pictured: work you didn't have to do.</p>
+
+<p><strong>Pro tip:</strong> Use <a href="http://jsonlint.com" target="_blank">JSONLint</a> to validate JSON-formatted content.</p>
+
+<p>
+	This approach decouples the game's assets and the information the game needs about them from the core game logic.
+	Assets get preloaded, modes get populated, Bob's your uncle.</p>
+<p>
+	The Atari Arcade game framework preloads and instantiates each game. A manifest is used to configure and populate the
+	site. When a user chooses your game, everything is preloaded and set up. All the assets are provided to the game in
+	a nice, easy-to-use object hash.</p>
+
+<!-- snippet: loadedAsset.js -->
+<pre>
+	<code data-language="javascript">
+// The game manifest includes an image
+var assets = [
+	{id:"projectile", src:"images/projectile.png"}
+];
+
+// Inside the game, we just do this:
+function initialize(assets, stage) {
+	var bitmap = new createjs.Bitmap(assets.projectile);
+	stage.addChild(bitmap);
+}
+	</code>
+</pre>
+
+<h3 class="header-small">The Battleplan</h3>
+<p>
+	Using the SDK will help you define and implement the methods you'll need to integrate your game into the Atari
+	Arcade.
+</p><p>
+	Within the Atari Arcade site, games are launched inside an iframe. This creates a sandbox for gameplay and provides
+	easy cleanup when it's Game Over. Just make a rad game, provide a manifest, and the framework will do the rest. The
+	SDK has a lot of out-of-the-box functionality to get you up and running easily, instead of having to manage
+	peripheral tasks yourself.
+</p>
+
+<p>
+	The <a href="assets/AtariArcade.QuickStartGuide.pdf" target="_blank">The Quick Start Guide</a>, included in the SDK, provides a more in-depth review of development including an overview all
+	the functionality, utilities, and key framework classes.
+</p>
+<p>The well maintained <a href="assets/AtariArcade_docs-1.0.0.zip" target="_blank">API Documentation</a>
+	included in SDK, is exported directly from in-line code comments.
+</p>
+
+<h2 class="header-medium">Some of the Nitty Gritty</h2>
+<p>
+	Here is a whirlwind review of some of the key concepts:
+</p><p>
+<h3 class="header-small">Game Initialization and Start</h3>
+<p>We know the game is preloaded, but the user hasn't started it. Maybe they're reviewing the controls, or gazing into
+	the shiny logo. This gives you a chance to initialize your game.</p>
+
+<!--snippet: initialize.js-->
+<pre>
+	<code data-language="javascript">
+// Simply define the function, and it is called by the framework.
+function initialize(stage, assets, gameInfo) {
+	this.stage = stage;
+	// TODO: Add children to stage
+
+	this.assets = assets;
+	// TODO: Use to get references to preloaded assets
+
+	this.gameInfo = gameInfo;
+	// Use to determine info such as multiplayer, number of players
+	// touch enabled, etc.
+}
+	</code>
+</pre>
+
+<p>
+	Once they click "Start" though, it's game on.
+</p>
+<!--snippet: startGame.js-->
+<pre>
+	<code data-language="javascript">
+// Simply define this function, and the framework calls it
+// when a game is ready to be started
+function startGame() {
+	// Start!
+	this.createBall();
+	this.startMusic();
+}
+	</code>
+</pre>
+
+<h3 class="header-small">Tick</h3>
+<p>A ticker provides a heartbeat to the game, powered by <a href="http://www.createjs.com/Docs/EaselJS/Ticker.html" target="_blank">EaselJS's Ticker</a>.
+	This is where the game updates (and animates) sprites, runs collisions, calculate scores, handles input - whatever floats your boat. The tick is automatically
+	managed for you: stopped and started when necessary, and even throttled down in high-stress situations.</p>
+<!--snippet: tick.js-->
+<pre>
+	<code data-language="javascript">
+// The game framework calls tick at regular intervals while the game is running.
+function tick(tickFactor) {
+	// Move ball
+	this.ball.x += (this.ball.vx * tickFactor);
+	this.ball.y += (this.ball.vy * tickFactor);
+
+	// Note: the tickFactor tells you the speed the game is running relative to the
+	// defined framerate so you can ensure the game runs at a steady speed.
+}
+	</code>
+</pre>
+
+<h3 class="header-small">Game Quality</h3>
+<p>One of the biggest disparities across many browsers and devices in HTML5/JavaScript development is performance.</p>
+<p>
+	Depending on your hardware, browser, or even the time of day, you may have hardware accelerated performance with
+	Canvas. Sometimes a browser just needs a restart, or a user needs to upgrade their video card. Maybe new drivers are
+	available. Maybe it's a full moon.
+</p><p>
+	To combat this situation, the Atari Arcade SDK allows you to prioritize features and effects in high or low quality
+	situations. Simply check which quality mode the game is running in, or subscribe to a low quality event, to disable
+	or remove features that don't perform well under stress. Scale back or remove particle effects, large bitmap
+	animations, or even swap out sprites for lower fidelity ones.</p>
+
+<!--snippet: performance.js-->
+<pre>
+	<code data-language="javascript">
+// Create a performance monitor
+var minFPS = 20;
+var threshold = 20; // The number of ticks before toggling low quality
+var perf = new GameLibs.PerformanceMonitor(toggleLowQuality, minFPS, threshold);
+
+// Once low quality is toggled, turn off the heavy firework effect.
+function toggleLowQuality(lowQuality) {
+	if (lowQuality) {
+		fireworksEffect.enabled = false;
+	}
+}
+
+// During a tick, only emit particles if in high quality mode.
+function tick() {
+	if (perf.lowQualityMode == false) {
+		particleEmitter.emit(ball.position, 100, particleProps, defaultParticle);
+	}
+}
+	</code>
+</pre>
+
+<p>
+	In Combat, we turn off projectile trails, tank treads, and other explosion effects when the CPU starts
+	complaining.</p>
+<img src="assets/combat-comparison.jpg"/>
+
+<h3 class="header-small">Game Score</h3>
+<p>All games track score differently, but most have similar requirements: numeric points, life count, and levels. A
+	ScoreManager class provides tweened, formatted score - as well as the raw unformatted score for submission. Just
+	point it at your EaselJS Text instance, and add numbers with reckless abandon!
+	</p>
+<img src="assets/scoreboard-mashup.jpg" />
+
+<h3 class="header-small">Callbacks</h3>
+<p>There comes a time when you are finished battling the Quotile scum, and need to let the Yar superiors know how the
+	battle turned out. Did you win? Should we allow you to continue?</p>
+<p>
+	Some easy callbacks are available to communicate this (and other significant game scenarios) back to the
+	framework.</p>
+
+<!-- callbacks.js -->
+<pre>
+	<code data-language="javascript">
+function onKillPlayer() {
+	// Who are we kidding? You lost. Yars is hard!
+	this.lives--;
+	if (this.lives == 0) {
+
+		// Normally we might do something fancy first.
+		// Like fade out the player, or show a death animation
+		this.onGameOver();
+	}
+}
+	</code>
+</pre>
+
+<p>That's it! The framework does the rest - even high score submission and display is handled for you.</p>
+<img src="assets/gameover.jpg"/>
+
+<!--Stub Game Example
+Here's a simple, sample stub game. For fun. Literally.-->
+
+<h3 class="header-small">User Input</h3>
+<p>The SDK provides some handy utilities and skinnable components to define and capture user input from the keyboard or
+	mouse. It even translates mouse presses to directional and drag behaviours.</p>
+<p>Touch is emerging on the web, and the Atari Arcade games have been designed with touch in mind for Internet Explorer 10.
+	You can use EaselJS and the Atari Arcade SDK to create simple-to-use multi-touch capabilities. It offers a single,
+	cross-browser, and developer-transparent implementation.</p>
+
+<!--snippet: joystick.js -->
+<pre>
+	<code data-language="javascript">
+// Initialization is a great time to set up touch controls
+function initialize(stage, assets, gameInfo) {
+	// This setting comes from the gameInfo
+	if (gameInfo.touchEnabled) {
+
+		// Create a joystick. There are lots of awesome
+		// configurations, but this is all you need to get
+		// started. Check out the docs for options!
+		var joystick = new GameLibs.Joystick(stage);
+		joystick.setPosition(25, 25);
+		stage.addChild(joystick);
+	}
+}
+	</code>
+</pre>
+
+<!-- [Joystick demo] -->
+
+<h3 class="header-small">Other Freebies</h3>
+<p>A lot of the code and effects used in the Atari-developed games have been wrapped up, documented, and provided as
+	part of the SDK. Have at ‘er:</p>
+<ul>
+	<li>Particle effects</li>
+	<li>Game UI controls (non-canvas background)</li>
+	<li>Line and circular collision</li>
+	<li>Handy Math, Point, and String utilities</li>
+	<li>HTML background and parallax effect</li>
+	<li>Sprite utilities</li>
+</ul>
+
+<!--[Demo: Particles?] -->
+
+<h3 class="header-small">Multiplayer Helpers</h3>
+<p>You might notice multiplayer classes included in the SDK. Our initial launch includes four multiplayer games that use them,
+	and they are interweaved into the site framework. Third-party developed games currently do not (yet) support multiplayer modes,
+	but we're in the process of polishing our approach to facilitate immersive, third-party multiplayer experiences in the arcade.
+	<strong>Stay tuned!</strong></p>
+
+<h2 class="header-medium">Juice it Up</h2>
+<p>
+	Once the manifest is populated and assets are loaded, its time to focus on the flair. Garnish gameplay
+	with sound, particles, killer illustration, and animation. Keep
+	it subtle. Go over the top. Turn your application into a world.</p>
+<p>
+	It can be the little things that make an interaction interesting.
+</p><p>
+	In Yars' Revenge&copy;, The tiny bob and leg animations convince you that he's flying. The spawn of
+	the Quotile, howling and screeching as they hatch: they're menacing! The background sounds and splashes help place
+	you in the environment. It's a private battle, off-site: a lone Yar battling to save his species! Or do they oppress the peaceful
+	Quotile villagers. You decide!
+</p><p>
+	The framework helps out with this too.
+<p></p>
+<h3 class="header-small">1. Logical Motion</h3>
+<p>
+Add movements and animation with code. Lots of the included libraries can help: Math utilities, the ScoreManager, TouchBar, and more.
+</p>
+	<h3 class="header-small">2. Tweens</h3>
+<p>
+	Include easy animation tricks with TweenJS. Add shakes and kicks and pulses. Transition views, dialogs, or new
+	levels in and out.
+</p>
+
+<!-- [TWEEN YAR DEMO] -->
+
+	<h3 class="header-small">3. Sounds</h3>
+<p>
+	Sound effects, background ambience, and a catchy track transforms the experience immediately. SoundJS makes one of
+	the messiest cross-browser implementations a snap.
+</p>
+
+<!-- snippet: soundjs.js -->
+<pre>
+	<code data-language="javascript">
+function fireWeapon() {
+	// Play a sound once
+	createjs.SoundJS.playSound(this.assets.fireSound);
+
+	// Play a sound, and get a reference to it
+	var instance = createjs.SoundJS.playSound(
+		this.assets.fireSound,
+		createjs.SoundJS.INTERRUPT_ANY,
+		offsetMilliseconds, delayMilliseconds,
+		loopCount, volume, pan);
+
+	// Call methods, or listen for callbacks
+	instance.onComplete = handleFireComplete;
+	instance.pause();
+}
+	</code>
+</pre>
+
+	<h3 class="header-small">4. Magic</h3>
+<p>
+	Particle effects are an industry standard for flair. ParticleEmitter adds smoldering effects, sparks, water
+	splashes and smoke trails. It's highly configurable, and comes with a sweet test harness. It uses an efficient
+	approach by reusing instances combined with bitmap caching.
+</p>
+	<h3 class="header-small">5. Touch</h3>
+<p>
+	Users may be touching their browsers with their hands. EaselJS's multitouch-enabled stage responds back. Skin the built-in
+	controls, or roll out custom touch UI for their fingers.
+</p>
+	<h3 class="header-small">6. Cheat</h3>
+<p>
+	Cheat codes are a staple of the game industry, so add your own hacks. The "konami" code is even included the SDK, wire
+	up a callback on the GamePad class, and anyone nostalgic enough to try them can be rewarded with magic. We included
+	support in a few of our games too - see if you can find which ones!
+</p>
+
+<h2 class="header-medium">Squeeze it Out</h2>
+<p>
+	Optimization of HTML5 games is an article on it's own, but here's a few tidbits to set you on the right path:
+</p>
+<p>
+<h3 class="header-small">1. Images and Canvas</h3>
+<p>
+	Canvas does not perform smart area redraw (unlike Flash), and will refresh the entire canvas each tick. Hardware
+	acceleration can assist with this, but generally speaking, try and keep textures smaller. Move static backgrounds
+	out of the canvas. A handy GameUI framework class in the SDK helps with this, and there are other useful classes to
+	do effects outside of the Canvas (such as Parallax).
+</p>
+<!--snippet: background.js-->
+<pre>
+	<code data-language="javascript">
+// An asset in the game manifest, which preloads the background
+var manifest = [
+	{id: "background", src:"images/background.png"}
+];
+
+// Backgrounds can be changed in the initialize
+// Or alternately somewhere in the game, like a level change.
+function initialize(stage, assets, gameInfo) {
+
+	// Note that the background is provided as part of the assets.
+	GameLibs.GameUI.changeBackground(assets.background);
+}
+	</code>
+</pre>
+
+<h3 class="header-small">2. Jump on the Video Card</h3>
+<p>
+	Modern browsers are able to accelerate content, but there are still ways to get the best bang for your buck.</p>
+<p>
+	Reuse image instances as often as possible. Cache graphic instances that only need to be drawn once. Use
+	updateCache() in EaselJS to continue adding pixels to cached imagery, such as the tank treads in Combat.</p>
+
+<!--snippet: updateCache-->
+<pre>
+	<code data-language="javascript">
+// The Arena.js contains the stamp method
+function stamp(stamp) {
+	// Clear out any old children. They aren't drawn so they
+	// only get removed when we want to stamp something new.
+	this.groundLayer.removeAllChildren();
+
+	// Stamp the new sprite on top of existing cache
+	this.groundLayer.addChild(stamp);
+
+	// Using source-over, it just applies on top
+	this.groundLayer.updateCache("source-over");
+}
+	</code>
+</pre>
+
+<!--TODO: Combat tanks image -->
+
+<p>
+	Create spritesheets and textures that have dimensions that are a power of two. Zoë now provides this option in the
+	update to version 0.3.0.</p>
+
+<h3 class="header-small">3. Use Spritesheets</h3>
+<p>
+Using spritesheets in HTML5 allows hardware acceleration to use the same image for all the frames in an animation. There is a single up-front load, the image is cached, and then simply transformed every frame. This also prevents the browser from re-uploading textures to the GPU when an image isn't being used in a frame.
+</p><p>
+	We use Flash to author some of our animations, but <strong>all</strong> of the assets are run through Flash for processing with Zoë. We use
+	JSFL to bundle spritesheets together for use with CreateJS.</p>
+<img src="assets/missilecommand-spritesheet.jpg"/>
+<p>
+	Another approach for vector art is to export assets directly from Flash using the "Adobe Toolkit for
+	CreateJS". It can export vector data to be used by the EaselJS SpriteSheetBuilder class to generate spritesheets on the fly
+	at runtime.<br />
+	<a href="http://www.adobe.com/products/flash/flash-to-html5.html" target="_blank">Download the Toolkit now</a>.
+</p>
+
+<h3 class="header-small">4. Optimize Your Code</h3>
+<p>
+	Even though canvas rendering takes up a large chunk of our pipeline, optimizing code is an exercise we encourage.</p>
+<ol>
+	<li>Find clever ways of reducing load. The ProximityManager game class is an example of this - track sprite proximity
+		of thousands of sprites, with little overhead (based on the <a href="http://gskinner.com/blog/archives/2004/04/experiment_grid.html" target="_blank">original</a> from 2004)</li>
+	<li>Resuse objects, arrays, and other complex instances instead of making new ones</li>
+	<li>Pre-define often-used calculations or algorithms.</li>
+	<li>Use hash lookups instead of constantly iterating an array</li>
+	<li>Release objects you are finished with to be freed from memory</li>
+</ol>
+
+<h3 class="header-medium">5. Know the Limitations</h3>
+<p>
+	Some browsers do better with different technologies. Always plan your game design with a hardware-accelerated
+browser, but be prepared to gracefully degrade.</p>
+<ul><li>Stay away from drop shadows and blend modes. Most browsers
+	can't hardware accelerate these and they'll cripple your framerates.</li>
+	<li>Watch image sizes on iOS. Anything over 2048x2048 will get automatically sized down by 50%. Similarly, anything
+	created in memory over the limit will not display.</li>
+	<li>Different browsers have different audio channel limits with HTML5 audio, so ensure you stay under 40 total channels
+	of audio (including duplicates for overlapping effects).</li></ul>
+
+<h3 class="header-small">6. Reduce Load Times</h3>
+<p>There's a ton you can do here.</p>
+<ol>
+	<li>Tackle your image formats and compression settings head on. Save backgrounds as JPG. Use tools like
+		<a href="http://gskinner.com/blog/archives/2012/08/reducing-file-size-for-images-with-alpha-channels.html" target="_blank">Omega</a>
+		to blend JPG compression with alpha channels, or <a href="http://pngmini.com/" target="_blank">ImageAlpha</a> to use indexed PNGs with full alpha transparency.
+		The Atari Arcade games make use of ImageAlpha to reduce the game spritesheets by up to 80%. <strong>Squeeze all those pixels!</strong>
+	</li>
+	<li>Compress audio and scrape off what you can. Games don't need 256kb stereo audio - try to get away with 32-64kb
+		mono (or lower!).
+	</li>
+	<li>Minify code. Combining them into a single file offers huge savings! We use both server-side and client-side
+		compilers like Google closure to compile JavaScript, and have a dope CSS process with LESS.
+	</li>
+	<li>Use CDN-hosted libraries. <a href="http://jquery.com/" target="_blank">JQuery</a>, <a href="http://backbonejs.org/" target="_blank">Backbone</a>,
+		<a href="http://code.createjs.com" target="_blank">CreateJS</a>. This is something we have already provided as part of the
+		SDK, but it's a great tip, so it belongs here.
+	</li>
+	<li>Use the spritesheet tips above. Besides combined and run-time spritesheets, Zoë provides great frame reuse, with
+		a configurable threshold to reuse similar, or near similar frames. To make things even easier, we recently released a workflow tool to assist
+		with this - check out the <a href="http://gskinner.com/blog/archives/2012/08/prep-for-zoe-jsfl-command.html" target="_blank">Prep
+		for Zoë JSFL Command</a>!
+	</li>
+</ol>
+
+<h2 class="header-medium">Rinse it Off</h2>
+<p>
+	Mobile and desktop. Different browsers, different behaviors. The same browser in a different OS, or different CPU,
+	or even a different video card, can have vastly different results. Check in your target browsers, and check often. When testing multiple versions of IE, try using the F12 developer tools.
+</p>
+<p>Do a sanity check when running into bugs by clearing your cache, refreshing your page, or by testing older or newer
+	versions of the same browser. For example, some browsers update often, or transparently, potentially introducing
+	incompatibilities with your code. Sometimes a good ol' browser restart will help too - especially if something like
+	CSS3D or WebAudio fails completely.</p>
+
+<h3 class="header-small">Debugging</h3>
+<p>
+	To simplify and equalize cross-browser console reporting, we've included some utilities that save you headaches and
+	time when logging info to the console.</p>
+<ol>
+	<li>Atari.trace() - The SDK provides a browser-safe console log method. Console is your friend, and informative errors are invaluable! Its important to get the info you need, without surfacing it to end users.</li>
+	<li>A "developerMode" flag in the core Atari class allows you to put in testing code and scenarios, without worrying that its making it to your end user. It automatically enables/disables verbose error checking, and when false will supress all Atari.trace() logs.</li>
+</ol>
+
+<h3 class="header-small">Local Testing</h3>
+<p>
+	The nature of HTML5 can make it tricky to test locally. Errors will erupt and there's browser warnings galore. Cross
+	reference online behavior to see what's isolated to local testing versus legitimate defects in code. For example, ignore these
+	locally generated cross-origin errors when loading content via XHR.
+</p>
+	<img src="assets/cross-origin-error.png" />
+<p>
+	Some features in HTML5 literally require your game be run off a server. To test locally, use tools like MAMP and
+	XAMPP to run a web server locally.<br />
+	<strong>Mac:</strong> <a href="http://www.mamp.info/" target="_blank">http://www.mamp.info/</a><br />
+	<strong>Windows and Linux:</strong><a href="http://www.apachefriends.org/en/xampp.html" target="_blank">http://www.apachefriends.org/en/xampp.html</a>
+</p>
+
+<img src="assets/mamp.png" />
+
+<p>
+	Fire them up, point their preferences at your game directory, navigate to your launch page on your local IP, and say
+	good-bye to cross-origin errors! This also makes device testing over a network a breeze. In a team environment like gskinner.com
+	it wasn't rare to have others testing bugs, regressing fixes, and checking out gameplay right off of another developer's
+	machine that was running a local server.</p>
+<p>One helpful note: to test local content in Internet Explorer 10, add your IP as a trusted site in the
+	Internet Explorer options on the Windows 8 desktop.</p>
+<h2 class="header-small">Online Testing</h2>
+<p>
+	Online is the only real test. Push milestone progress up to a server and do a thorough sweep across all features
+	and fixes in all browsers, operating systems and devices. Always clear your cache between tests (unless testing cached-specific
+	features) and optionally quit your browsers.
+</p><p>FTP is slow. Check out a GIT deployment repository on your server instead using SSH, and anyone working on the project can just
+	commit changes. We set up a script to automatically pull down the latest updates on the server, and tied it to a git commit hook
+	for completely automated deployment! Its a few steps worthy of its own article, but it saved us an amazing amount of time.
+</p><p>
+	The testing harness in the SDK provides a great way to do game testing, and includes some additional options that can lighten the load, such as:</p>
+<ul>
+	<li>quick play: A site shim script simulates the loading of the game into the site, including prompting for game
+		modes, multiplayer, and handling game over scenarios.
+	</li>
+	<li>audio-free: Audio is likely the heaviest assets in a game. Additionally, some browsers have issues with large
+		audio files, and specific encode settings, which made it prudent to include a way to prevent any audio from
+		loading or playing.
+	</li>
+	<li>force touch: You can't truly simulate touch - but we can at least trick the framework so touch-only controls and
+		scenarios can be simulated on the desktop.
+	</li>
+</ul>
+
+<h2 class="header-medium">Push the Red Button</h2>
+<p>
+	Strive to have the most minimal, turn-key deploy process as possible.
+</p>
+<p>.. But most of that is covered for you with the SDK. We are still ironing out the 3rd-party game submission process - but are aiming
+for it to be as automated and straightforward as possible.</p>
+<p>Once you're done, visit the <a href="/arcade/developers/atari-arcade-developer-program" target="_blank">Game Submission section</a> in the developer center. We will be updating this with an official
+submission process in the coming weeks.</p>
+
+<h3 class="header-small">And Destroy!</h3>
+<p>
+	Thanks for making it this far! Stop reading, start building! Pick a cool title, and go have some fun.
+	Let us know what you make, and what you'd like to see in the <a href="/arcade" target="_blank">Atari Arcade</a> or SDK.</p>
+
+<h2 class="header-medium">Resources</h2>
+<p>
+	Here's some additional resources and references for game development in HTML5.
+<ul>
+	<li>Atari Arcade SDK Quickstart Guide (also included in the SDK)<br />
+	<a href="assets/AtariArcade.QuickStartGuide.pdf" target="_blank">Download PDF</a></li>
+
+	<li>CreateJS<br />
+		<a href="http://createjs.com" target="_blank">Learn more about CreateJS</a><br />
+		<a href="http://community.createjs.com" target="_blank">Community Forum and Feedback</a><br />
+		<a href="http://github.com/CreateJS" target="_blank">CreateJS on GitHub</a>
+	</li>
+
+	<li>More HTML5 and Flash goodness on <a href="http://gskinner.com" target="_blank">gskinner.com</a> and the <a href="http://gskinner.com/blog" target="_blank">gBlog</a></li>
+
+	<li><a href="http://msdn.microsoft.com/en-us/library/ie/hh673549(v=vs.85).aspx" target="_blank">Internet Explorer 10 Guide for Developers</a></li>
+	<li><a href="http://html5labs.interoperabilitybridges.com/" target="_blank">HTML5 Labs</a>
+	<li><a href="http://www.w3.org/standards/webdesign/" target="_blank">W3C</a></li>
+	<li><a href="http://ie.microsoft.com/testdrive/HTML5/CompatInspector/" target="_blank">Removing legacy IE Markup with Compat Inspector</a></li>
+	<li><a href="http://msdn.microsoft.com/en-us/magazine/hh394148.aspx" target="_blank">Feature Detection for HTML5</a></li>
+	<li><a href="http://blogs.msdn.com/b/ie/" target="_blank">IE Blog</a></li>
+	<li><a href="http://msdn.microsoft.com/en-us/IE" target="_blank">MSDN IE DevCenter</a></li>
+	<li><a href="http://www.ietestdrive.com/">IETestDrive</a></li>
+	<li><a href="http://blogs.msdn.com/b/ie/archive/2011/09/20/touch-input-for-ie10-and-metro-style-apps.aspx" target="_blank">Windows 8 / Internet Explorer 10 : Touch Friendly</a></li>
+	<li><a href="http://blogs.msdn.com/b/ie/archive/2011/08/31/browsing-without-plug-ins.aspx" target="_blank">Windows 8 / Internet Explorer 10 : Plug-in Free</a></li>
+	<li><a href="http://ie.microsoft.com/testdrive/Browser/SitePinningInWin8/" target="_blank">Windows 8 / Internet Explorer 10 : Pinning Sites</a></li>
+</ul>
+</p>
+
+<h2 class="header-medium">About the Authors</h2>
+<img src="assets/article-credits.png" />
+<p>Lanny McNie, Michael Graves, and Chris Caldwell are the senior staff of <a href="http://gskinner.com" target="_blank">gskinner.com</a>, an agency focused on building
+    bleeding edge interactive and creative, and bringing value to platform owners, developers, and end users alike.
+    We produce success stories that showcase and enhance technology platforms. We recently worked with Atari to bring re-imagine
+    the <a href="http://atari.com/arcade/">Atari Arcade</a> using webstandards like HTML5, CSS3, and websockets.</p>
+</body>
+</html>
